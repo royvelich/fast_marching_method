@@ -4,6 +4,13 @@
 #include <vector>
 #include <queue>
 
+#define BLACK 0
+#define RED 1
+#define GREEN 2
+
+//double INF = std::numeric_limits<double>::max();
+double INF = 3000;
+
 struct Node
 {
 	Node(int x, int y, matlab::data::TypedArray<double>* dist) :
@@ -45,38 +52,9 @@ public:
 class node_priority_queue : public std::priority_queue<Node, std::vector<Node>, CompareNode>
 {
 public:
-
-    //bool remove(const Node& node_to_remove) {
-    //    auto it = std::find_if(this->c.begin(), this->c.end(), [&](const Node& curr_node) {
-    //        if
-    //    });
-    //    //if (it != this->c.end()) {
-    //    //    this->c.erase(it);
-    //    //    std::make_heap(this->c.begin(), this->c.end(), this->comp);
-    //    //    return true;
-    //    //}
-    //    //else {
-    //    //    return false;
-    //    //}
-    //}
-
     void sort()
 	{
         std::make_heap(this->c.begin(), this->c.end(), this->comp);
-    }
-
-    bool exist(const Node& node)
-    {
-		auto it = std::find_if(this->c.begin(), this->c.end(), [&](const Node& curr_node) {
-			if((node.x == curr_node.x) && (node.y == curr_node.y))
-			{
-                return true;
-			}
-
-            return false;
-		});
-
-        return it != this->c.end();
     }
 };
 
@@ -105,19 +83,21 @@ public:
         matlab::data::TypedArray<double> src = std::move(inputs[1]);
         matlab::data::TypedArray<double> t0 = std::move(inputs[2]);
         matlab::data::CharArray display = std::move(inputs[3]);
-        const size_t numRows = F.getDimensions()[0];
-        const size_t numColumns = F.getDimensions()[1];
-        matlab::data::TypedArray<double> dist = factory.createArray<double>({ numRows, numColumns });
-        fmm(F, src, t0, display, dist);
+        const size_t num_rows = F.getDimensions()[0];
+        const size_t num_columns = F.getDimensions()[1];
+        matlab::data::TypedArray<double> dist = factory.createArray<double>({ num_rows, num_columns });
+        matlab::data::TypedArray<int> states = factory.createArray<int>({ num_rows, num_columns });
+        fmm(F, src, t0, display, dist, states);
         outputs[0] = std::move(dist);
     }
 
-    void update(
+    bool update(
         int x,
         int y,
         node_priority_queue& queue,
         matlab::data::TypedArray<double>& F,
-        matlab::data::TypedArray<double>& dist)
+        matlab::data::TypedArray<double>& dist,
+        matlab::data::TypedArray<int>& states)
     {
         Node node = Node(x, y, &dist);
         int node_x = node.x;
@@ -132,13 +112,13 @@ public:
         double T_left;
         neighbor_x = node_x - 1;
         neighbor_y = node_y;
-    	if(in_bounds(F, neighbor_x, neighbor_y))
+    	if(in_bounds(F, states, neighbor_x, neighbor_y))
     	{
             T_left = dist[neighbor_y][neighbor_x];
     	}
         else
         {
-            T_left = std::numeric_limits<double>::max();
+            T_left = INF;
         }
 
     	/**
@@ -147,13 +127,13 @@ public:
         double T_right;
         neighbor_x = node_x + 1;
         neighbor_y = node_y;
-        if (in_bounds(F, neighbor_x, neighbor_y))
+        if (in_bounds(F, states, neighbor_x, neighbor_y))
         {
             T_right = dist[neighbor_y][neighbor_x];
         }
         else
         {
-            T_right = std::numeric_limits<double>::max();
+            T_right = INF;
         }
 
     	/**
@@ -162,13 +142,13 @@ public:
         double T_top;
         neighbor_x = node_x;
         neighbor_y = node_y - 1;
-        if (in_bounds(F, neighbor_x, neighbor_y))
+        if (in_bounds(F, states, neighbor_x, neighbor_y))
         {
             T_top = dist[neighbor_y][neighbor_x];
         }
         else
         {
-            T_top = std::numeric_limits<double>::max();
+            T_top = INF;
         }
 
     	/**
@@ -177,13 +157,13 @@ public:
         double T_bottom;
         neighbor_x = node_x;
         neighbor_y = node_y + 1;
-        if (in_bounds(F, neighbor_x, neighbor_y))
+        if (in_bounds(F, states, neighbor_x, neighbor_y))
         {
             T_bottom = dist[neighbor_y][neighbor_x];
         }
         else
         {
-            T_bottom = std::numeric_limits<double>::max();
+            T_bottom = INF;
         }
 
     	/**
@@ -204,30 +184,63 @@ public:
 
         node.SetTime(std::min(node.GetTime(), t));
 
-    	if(!queue.exist(node))
+    	if(states[node.y][node.x] == GREEN)
     	{
+            states[node.y][node.x] = RED;
             queue.push(node);
+            return false;
     	}
 
-        //std::ostringstream stream;
-        //stream << "(" << node.x << ", " << node.y << "): " << node.GetTime() << std::endl;
-        //displayOnMATLAB(std::move(stream));
+        return t < node.GetTime();
+
+		//std::ostringstream stream;
+		//stream << "(" << node.x << ", " << node.y << "): " << node.GetTime() << std::endl;
+		//displayOnMATLAB(std::move(stream));
     }
 
     bool in_bounds(
         matlab::data::TypedArray<double>& F,
+        matlab::data::TypedArray<int>& states,
         int x,
         int y)
     {
         const size_t rows = F.getDimensions()[0];
         const size_t cols = F.getDimensions()[1];
 
-    	if((x >= 0) && (x < cols) && (y >= 0) && (y < rows))
-    	{
-            return F[y][x] == 1;
-    	}
+        if((x >= 0) && (x < cols) && (y >= 0) && (y < rows))
+        {
+            return states[y][x] != BLACK;
+        }
 
         return false;
+    }
+
+	void render(
+        matlab::data::TypedArray<double>& dist,
+        matlab::data::TypedArray<int>& states,
+        int iteration)
+    {
+    	// Call figure only once (so we won't have endless figure windows all over the places)
+        if (iteration == 0)
+        {
+            matlabPtr->eval(u"figure");
+            matlabPtr->eval(u"drawnow limitrate");
+        }
+
+        matlabPtr->eval(u"handle1 = subplot(2,1,1)");
+        std::vector<matlab::data::Array> imagesc_args({ dist });
+        matlabPtr->feval(u"imagesc", imagesc_args);
+        std::vector<matlab::data::Array> colormap_args1({ matlabPtr->getVariable(u"handle1"), factory.createCharArray("parula") });
+        matlabPtr->feval(u"colormap", colormap_args1);
+        matlabPtr->eval(u"drawnow limitrate");
+
+        matlabPtr->eval(u"handle2 = subplot(2,1,2)");
+        std::vector<matlab::data::Array> image_args({ states });
+        matlabPtr->feval(u"image", image_args);
+        matlabPtr->eval(u"forest_colors = [0, 0, 0; 1, 0, 0; 0, 1, 0]");
+        std::vector<matlab::data::Array> colormap_args2({ matlabPtr->getVariable(u"handle2"), matlabPtr->getVariable(u"forest_colors") });
+        matlabPtr->feval(u"colormap", colormap_args2);
+        matlabPtr->eval(u"drawnow limitrate");
     }
 
     void fmm(
@@ -235,7 +248,8 @@ public:
         matlab::data::TypedArray<double>& src,
         matlab::data::TypedArray<double>& t0,
         matlab::data::CharArray& display,
-        matlab::data::TypedArray<double>& dist)
+        matlab::data::TypedArray<double>& dist,
+        matlab::data::TypedArray<int>& states)
 	{
         const size_t rows = F.getDimensions()[0];
         const size_t cols = F.getDimensions()[1];
@@ -247,34 +261,57 @@ public:
         {
             for (size_t j = 0; j < cols; j++)
             {
-                dist[i][j] = std::numeric_limits<double>::max();
+                dist[i][j] = INF;
+                states[i][j] = GREEN;
             }
         }
 
         Node top_node = queue.top();
         dist[top_node.y][top_node.x] = t0[0];
-
+        states[top_node.y][top_node.x] = RED;	
         std::vector<std::pair<int, int>> deltas = { {1,0}, {-1,0} ,{0,1} , {0,-1} };
-    	
+
+        int iteration = 0;
     	while(!queue.empty())
     	{
+            if (display.toAscii() != "silent")
+            {
+                if (iteration % 3000 == 0)
+                {
+                    render(dist, states, iteration);
+                }
+            }
+    		
             Node top_node = queue.top();
             queue.pop();
 
+            bool needs_sort = false;
+    		
             for(auto delta : deltas)
             {
                 int x_delta = delta.first;
                 int y_delta = delta.second;
                 int curr_x = top_node.x + x_delta;
                 int curr_y = top_node.y + y_delta;
-                if(in_bounds(F, curr_x, curr_y))
+                if(in_bounds(F, states, curr_x, curr_y))
                 {
-                    update(curr_x, curr_y, queue, F, dist);
+                    if(update(curr_x, curr_y, queue, F, dist, states))
+                    {
+                        needs_sort = true;
+                    }
                 }
             }
 
-            F[top_node.y][top_node.x] = 0;
-            queue.sort();
+            states[top_node.y][top_node.x] = BLACK;
+
+            if (needs_sort)
+            {
+                queue.sort();
+            }
+    		
+            iteration++;
     	}
+
+        render(dist, states, iteration);
     }
 };
