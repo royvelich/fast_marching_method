@@ -224,7 +224,6 @@ public:
         if (iteration == 0)
         {
             matlabPtr->eval(u"figure");
-            matlabPtr->eval(u"drawnow limitrate");
         }
 
         matlabPtr->eval(u"handle1 = subplot(2,1,1)");
@@ -312,6 +311,9 @@ public:
             iteration++;
     	}
 
-        render(dist, states, iteration);
+        if (display.toAscii() != "silent")
+        {
+            render(dist, states, iteration);
+        }
     }
 };
