@@ -1,44 +1,53 @@
-
-
 load("maze.mat");
 load('pool.mat');
+
+maze = I;
+maze_rotated = imrotate(maze, 45);
+
 F = double(I);
-wall_indicators = F == 0;
-F(wall_indicators) = 100;
-dist = dist_mex(F, [815, 384], [0], 'silent');
+F_rotated = imrotate(double(I), 45);
 
-% imshow(I);
-% F = double(I);
+F_wall_indicators = F == 0;
+F(F_wall_indicators) = 100;
+
+F_rotated_wall_indicators = F_rotated == 0;
+F_rotated(F_rotated_wall_indicators) = 100;
+
+source = [815, 384];
+target = [9, 234];
+
+% T = dist_mex(F, source, [0], 'silent');
+% path = shortest_path(T, source, target);
+
+% figure;
+% imshow(F);
+% hold on;
+% plot_path(path, 'blue');
+% hold off;
 
 
-% mymap = [0 0 0
-%          1 0 0
-%          0 1 0];
-%      
-% mat = [0,1,2;2,1,0;1,1,1];
-% colormap(mymap)
-% imagesc(mat)
-% 
-% 
-% 
-% 
-% A = [1,2,3,4,5];
-% B = [4,5,6,7,8];
-% 
-% C = cat(3, A, B);
-% 
-% x = [1,2];
-% path = x;
-% path(end + 1, :) = [3,4];
-% 
-% bla = vecnorm(C, 2, 3);
-% 
-% D = repmat(vecnorm(C, 2, 3), [1 1 2]);
+% F_copy = F;
+% F_copy(815, 384) = 123;
+% F_copy_rotated = imrotate(F_copy, 45);
+% [rows, cols] = size(F_copy_rotated);
+% for row = 1 : rows
+%     for col = 1 : cols
+%         if F_copy_rotated(row, col) == 123
+%             source_rotated = [col, row];
+%         end
+%     end
+% end
 
-% load('pool.mat');
 
-% dist = dist_mex(F, [815, 384], [0], 'silent');
-% bla = dist .* F;
-% 
-% N = normalize(dist)
-% imagesc(bla)
+source = [849, 737];
+target = [188, 1214];
+
+T = dist_mex(F_rotated, source, [0], 'silent');
+path = shortest_path(T, source, target);
+
+figure;
+imshow(maze_rotated);
+hold on;
+plot_path(path, 'blue');
+hold off;
+
