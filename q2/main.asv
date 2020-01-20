@@ -20,21 +20,14 @@ bla = grid(1);
 paraboloid1 = (X - 2) .^ 2 + Y .^ 2 - 5;
 paraboloid2 = (X + 2) .^ 2 + Y .^ 2 - 5;
 
-% Creeate the desired surface (with two bumps) by taking the min over Z
 Z = min(paraboloid1, paraboloid2);
+% Z = reshape(Z, n, n);
 
-% small time steps
 dt = 1e-1;
-
-% plot evolution every few iterations
-plot_every = 50;
-
-for i = 1 : 300
-    % Plot curve evolution every few iterations
-    if mod(i, plot_every) == 0
-        plot_evolution(grid, X, Y, Z, ratio, grid_length);
-    end
-    
+z0=0;
+plot_contour_line(grid, X, Y, Z);
+plot_every = 100;
+for i = 1 : 700
     % Approximate surface normal (implicit function gradient) using finite
     % differences
     [Zx, Zy] = gradient(Z);
@@ -47,4 +40,9 @@ for i = 1 : 300
     
     % Evolve Z by infinitesimal delta of gradient norm
     Z = Z + dt * g_norm;
+    
+    % Plot curve evolution every few iterations
+    if mod(i, plot_every) == 0
+        plot_evolution(grid, X, Y, Z, ratio, );
+    end
 end
