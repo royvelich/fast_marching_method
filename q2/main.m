@@ -1,5 +1,5 @@
 % Number of grid samples
-n = 300;
+n = 500;
 
 % Grid length
 grid_length = 5;
@@ -9,8 +9,6 @@ ratio = n / (2 * grid_length);
 
 % Sample 2D grid
 grid = linspace(-grid_length, grid_length, n);
-
-bla = grid(1);
 
 % Get coordinates of grid points
 [X, Y] = meshgrid(grid);
@@ -27,12 +25,12 @@ Z = min(paraboloid1, paraboloid2);
 dt = 1e-1;
 
 % plot evolution every few iterations
-plot_every = 50;
+plot_every = 100;
 
-for i = 1 : 300
+for i = 0 : 500
     % Plot curve evolution every few iterations
     if mod(i, plot_every) == 0
-        plot_evolution(grid, X, Y, Z, ratio, grid_length);
+        plot_evolution(i, X, Y, Z, ratio, grid_length);
     end
     
     % Approximate surface normal (implicit function gradient) using finite

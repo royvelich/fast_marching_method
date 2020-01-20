@@ -1,8 +1,9 @@
-function curve_k = plot_evolution(grid, X, Y, Z, ratio, grid_length)
+function curve_k = plot_evolution(iteration, X, Y, Z, ratio, grid_length)
     % plot current curve evolution
     figure();
     subplot(1, 2, 1);
     C = contour(X, Y, Z, [0 0]);
+    title(strcat("Curve Evolution at time = ", int2str(iteration)));
     
     % remove first column
     C = C(:, 2:end);
@@ -22,5 +23,8 @@ function curve_k = plot_evolution(grid, X, Y, Z, ratio, grid_length)
     % plot k as a function of s
     subplot(1, 2, 2);
     plot(s, curve_k);
+    title("Curvature as a function of arc-length");
+    xlabel('Arc-Length');
+    ylabel('Curvature');
 end
 
