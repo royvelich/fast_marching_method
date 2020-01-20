@@ -13,6 +13,11 @@ F(F_wall_indicators) = 100;
 F_rotated_wall_indicators = F_rotated == 0;
 F_rotated(F_rotated_wall_indicators) = 100;
 
+% UNCOMMENT TO RUN WITH ANIMATION
+% source = [815, 384];
+% target = [9, 234];
+% maze_dist = fmm(F, source, [0], 'iter');
+
 % Solve maze
 source = [815, 384];
 target = [9, 234];
@@ -30,7 +35,7 @@ plot_path(path, 'blue');
 hold off
 title("Maze Solution");
 
-% Solve roated maze
+% Solve roated maze (transformed points coordinates were appoximated manually)
 source = [849, 737];
 target = [188, 1214];
 maze45_dist = fmm(F_rotated, source, [0], 'silent');
